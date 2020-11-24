@@ -1,0 +1,35 @@
+version: "3"
+services:
+  api:
+    container_name: habit_api
+    image: habit_api
+    build: .
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    environment:
+      - PORT=8080
+      - HOST=localhost
+      - SECRET=jwt-secret-test
+      - NODE_ENV=test
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=test
+      - POSTGRES_SERVER=db
+    command: >
+      bash -c "sleep 3s
+        && yarn migrate
+        && tail -f /dev/null"
+  db:
+    container_name: habit_db
+    image: postgres:13
+    ports:
+      - 5432:5432
+    restart: always
+    environment:
+      - NODE_ENV=test
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=test
+      - POSTGRES_SERVER=db
