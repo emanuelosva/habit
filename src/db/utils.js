@@ -7,7 +7,7 @@
  * @param {string} snake - the snake case string
  */
 exports.convertToCamel = (snake) => {
-  return snake.split('_').map((str, index) => {
+  return String(snake).split('_').map((str, index) => {
     if (index !== 0) return str.charAt(0).toUpperCase() + str.slice(1)
     return str
   }).join('')

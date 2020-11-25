@@ -19,7 +19,7 @@ exports.up = function (knex) {
       table.increments('id').primary()
       table.string('token', 512).index().notNullable()
       table.boolean('is_valid').defaultTo(true)
-      table.integer('username').notNullable().unsigned()
+      table.string('username').notNullable().unsigned()
         .references('username').inTable('users').onDelete('cascade')
     })
     /** TABLE: 'friendship' */
@@ -30,7 +30,7 @@ exports.up = function (knex) {
       table.integer('user_to').notNullable().unsigned()
         .references('id').inTable('users').onDelete('cascade')
       table.enum('status', ['friends', 'pending', 'declined', 'canceled'])
-      table.unique(['user_from', 'user_to']).index()
+      table.unique(['user_from', 'user_to'])
     })
     /** TABLE: 'habits' */
     .createTableIfNotExists('habits', function (table) {
@@ -54,7 +54,7 @@ exports.up = function (knex) {
       table.boolean('complated').defaultTo(false)
       table.dateTime('completed_date').nullable()
       table.string('note', 80).nullable()
-      table.unique(['habit', 'date'])
+      table.unique(['habit', 'time'])
     })
     /** TABLE: 'group' */
     .createTableIfNotExists('groups', function (table) {
