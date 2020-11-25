@@ -18,7 +18,7 @@ module.exports = class ApiError extends Error {
    */
   constructor (status, message, isOperational = false) {
     super(message)
-    this.message = message || 'Server error'
+    this.message = message
     this.status = status || httpSatus.serverError
     this.isOperational = isOperational
   }
