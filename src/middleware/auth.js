@@ -22,13 +22,14 @@ exports.isAuthenticated = async (req, res, next) => {
       return next(new ApiError(httpSatus.forbidden))
     }
     const token = req.headers.authorization.split('Bearer ')[1]
-    const { username, type, role } = await jwt.verify(token).catch(next)
-    if (!username || type !== tokenTypes.auth || !(role in validScopes)) {
+    const { username, type, scope } = await jwt.verify(token).catch(next)
+    if (!username || type !== tokenTypes.auth || !validScopes.indexOf(scope)) {
       return next(new ApiError(httpSatus.unauthorized))
     }
     const user = await db('users').where('username', username).first()
-    if (!user) return next(new ApiError(httpSatus.unauthorized))
-    Object.assign(user, { role })
+    if (user === 'undefined') return next(new ApiError(httpSatus.unauthorized))
+    delete user.password
+    Object.assign(user, { scope })
     req.user = user
     next()
   } catch (error) {
@@ -42,7 +43,7 @@ exports.isAuthenticated = async (req, res, next) => {
  */
 exports.checkScopes = (resourceScopes) => {
   return (req, res, next) => {
-    if (req.user.role in resourceScopes) {
+    if (resourceScopes.indexOf(req.user.scope)) {
       return next()
     }
     return next(new ApiError(httpSatus.forbidden))
