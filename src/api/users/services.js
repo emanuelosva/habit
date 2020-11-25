@@ -16,8 +16,12 @@ const scopes = require('../../auth/scopes')
 exports.signup = async ({ username, email, password, fullName }) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10)
-    const user = await usersDb
-      .createOne({ username, email, password: hashedPassword, fullName })
+    const [user] = await usersDb.createOne({
+      username,
+      email,
+      password: hashedPassword,
+      fullName,
+    })
     const token = await jwt.sign({
       username: user.username,
       type: tokenTypes.mail,
@@ -35,12 +39,10 @@ exports.signup = async ({ username, email, password, fullName }) => {
 exports.verifyEmail = async ({ emailToken }) => {
   try {
     const { username, type } = await jwt.verify(emailToken)
-    const user = await usersDb.findByUsername({ username })
-    if (user && type === tokenTypes.mail) {
-      await usersDb.updateOne({ id: user.id, data: { isVerified: true } })
-      return user
+    if (type !== tokenTypes.mail) {
+      throw new ApiError(httpSatus.forbidden, 'Invalid token')
     }
-    throw new ApiError(httpSatus.forbidden, 'Invalid token')
+    return usersDb.setToVerified({ username })
   } catch (error) {
     return Promise.reject(error)
   }
@@ -52,8 +54,15 @@ exports.verifyEmail = async ({ emailToken }) => {
 exports.login = async ({ email, password }) => {
   try {
     const user = await usersDb.findByEmail({ email })
-    const correctPassword = await bcrypt.compare(password, user.password)
+    const correctPassword = user && await bcrypt.compare(password, user.password)
     if (user && correctPassword) {
+      if (!user.isVerified) {
+        const FiveDaysInMiliseconds = 86400 * 5 * 1000
+        const timeFromSignupWithoutVerify = +new Date() - +new Date(user.joinedAt)
+        if (timeFromSignupWithoutVerify > FiveDaysInMiliseconds) {
+          throw new ApiError(httpSatus.forbidden, 'The ccount needs to be verified')
+        }
+      }
       const accessToken = await jwt.sign({
         username: user.username,
         type: tokenTypes.auth,
@@ -61,6 +70,7 @@ exports.login = async ({ email, password }) => {
       })
       const refreshToken = await jwt.generateRefreshToken()
       await usersDb.createRefreshToken({ refreshToken, username: user.username })
+      delete user.password
       return { user, accessToken, refreshToken }
     }
     throw new ApiError(httpSatus.unauthorized, 'Invalid credentials')
@@ -95,8 +105,7 @@ exports.refreshToken = async ({ username, refreshToken }) => {
  */
 exports.updateOne = async ({ id, updateData }) => {
   try {
-    await usersDb.updateOne({ id, data: updateData })
-    return usersDb.findById({ id })
+    return usersDb.updateOne({ id, data: updateData })
   } catch (error) {
     return Promise.reject(error)
   }
