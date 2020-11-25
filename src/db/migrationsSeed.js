@@ -15,7 +15,7 @@ exports.up = function (knex) {
       table.string('picture', 256).nullable()
       table.text('biography').nullable()
       table.date('joined_at').defaultTo(knex.fn.now())
-      table.boolean('is_verfied').defaultTo(false)
+      table.boolean('is_verified').defaultTo(false)
     })
     /** TABLE: 'tokens' */
     .createTableIfNotExists('tokens', function (table) {

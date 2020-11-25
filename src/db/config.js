@@ -63,5 +63,5 @@ module.exports = {
       return convertToCamel(result)
     },
     wrapIdentifier: (value, orignImpl, queryContext) => orignImpl(convertToSnakeCase(value)),
-  }
+  },
 }
