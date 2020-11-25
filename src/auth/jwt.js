@@ -49,6 +49,5 @@ exports.verify = async (token) => {
  * Generate a randon refresh token
  */
 exports.generateRefreshToken = async () => {
-  const uid = promisify(randToken.uid)
-  return uid(128)
+  return randToken.uid(128)
 }
