@@ -5,7 +5,7 @@
  */
 
 const bcrypt = require('bcrypt')
-const usersDb = require('./DAL')
+const { User, Token } = require('./DAL')
 const { ApiError, httpSatus } = require('../../utils')
 const { jwt, tokenTypes } = require('../../auth')
 const scopes = require('../../auth/scopes')
@@ -16,12 +16,13 @@ const scopes = require('../../auth/scopes')
 exports.signup = async ({ username, email, password, fullName }) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10)
-    const [user] = await usersDb.createOne({
+    const user = new User({
       username,
       email,
       password: hashedPassword,
       fullName,
     })
+    await user.save()
     const token = await jwt.sign({
       username: user.username,
       type: tokenTypes.mail,
@@ -42,7 +43,7 @@ exports.verifyEmail = async ({ emailToken }) => {
     if (type !== tokenTypes.mail) {
       throw new ApiError(httpSatus.forbidden, 'Invalid token')
     }
-    return usersDb.setToVerified({ username })
+    return User.setToVerified(username)
   } catch (error) {
     return Promise.reject(error)
   }
@@ -53,7 +54,7 @@ exports.verifyEmail = async ({ emailToken }) => {
  */
 exports.login = async ({ email, password }) => {
   try {
-    const user = await usersDb.findByEmail({ email })
+    const user = await User.findByEmail(email)
     const correctPassword = user && await bcrypt.compare(password, user.password)
     if (user && correctPassword) {
       if (!user.isVerified) {
@@ -69,7 +70,8 @@ exports.login = async ({ email, password }) => {
         scope: scopes.user,
       })
       const refreshToken = await jwt.generateRefreshToken()
-      await usersDb.createRefreshToken({ refreshToken, username: user.username })
+      const token = new Token({ refreshToken, username: user.username })
+      await token.save()
       delete user.password
       return { user, accessToken, refreshToken }
     }
@@ -84,9 +86,9 @@ exports.login = async ({ email, password }) => {
  */
 exports.refreshToken = async ({ username, refreshToken }) => {
   try {
-    const token = await usersDb.findRefreshToken({ refreshToken })
+    const token = await Token.findOne(refreshToken)
     if (token && token.isValid && token.username === username) {
-      const user = await usersDb.findByUsername({ username })
+      const user = await User.findByUsername(username)
       const accessToken = await jwt.sign({
         username: user.username,
         type: tokenTypes.auth,
@@ -105,7 +107,7 @@ exports.refreshToken = async ({ username, refreshToken }) => {
  */
 exports.updateOne = async ({ id, updateData }) => {
   try {
-    return usersDb.updateOne({ id, data: updateData })
+    return User.updateOne(id, updateData)
   } catch (error) {
     return Promise.reject(error)
   }
@@ -116,7 +118,7 @@ exports.updateOne = async ({ id, updateData }) => {
  */
 exports.deleteOne = async ({ id }) => {
   try {
-    await usersDb.deleteOne({ id })
+    await User.deleteOne(id)
   } catch (error) {
     return Promise.reject(error)
   }
