@@ -52,9 +52,11 @@ module.exports = {
       host: 'db',
       user: 'postgres',
       password: 'postgres',
-      database: 'test',
+      database: 'habit',
       port: 5432,
+      schema: 'test',
     },
+    searchPath: ['test'],
     migrations: {
       directory: path.join(__dirname, './migrations'),
     },
