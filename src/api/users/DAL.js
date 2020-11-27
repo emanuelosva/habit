@@ -45,10 +45,13 @@ exports.User = class User {
       this.data = user
       return this.data
     } catch (error) {
-      if (error.constraint.split('_') === 'email') {
-        return raiseError(httpSatus.conflict, 'Email already exists')
+      if (error.constraint) {
+        if (error.constraint.split('_') === 'email') {
+          return raiseError(httpSatus.conflict, 'Email already exists')
+        }
+        return raiseError(httpSatus.conflict, 'Username already exists')
       }
-      return raiseError(httpSatus.conflict, 'Username already exists')
+      return raiseError(httpSatus.serverError)
     }
   }
 
